@@ -22,7 +22,7 @@ void AEnemyAIController::BeginPlay()
 		thisPawn = GetPawn();
 		bIsAwake = true;
 		thisCharacter = Cast<ACharacter_WuKong>(thisPawn);
-
+		bIsTimer3Started = false;
 	}, WaitTime2, false);
 
 	
@@ -62,25 +62,55 @@ void AEnemyAIController::Tick(float DeltaTime)
 		// else if the character is within the reach of actor's attack range then attack
 		if (!IsWithinRange(myLocation, playerLocation, 200.0f))
 		{
-			int random = FMath::RandRange(0, 5);
-			if (random < 3)
+			int random = FMath::RandRange(0, 10);
+			if (random > 8 && !bCheckPos && !bIsMoving)
 			{
-				MoveTo(playerLocation);
+				thisCharacter->GetCharacterMovement()->StopMovementImmediately();
+				RangedAttack();
+				
 			}
 			else
 			{
-				RangedAttack();
+				// if the character is not doing a ranged attack, then move to player
+				if (!thisCharacter->GetbIsDoingRangedMove())
+				{
+					MoveTo(playerLocation);
+					bIsMoving = true;
+				}
 			}
-			
-			
+			if(!bCheckPos)
+			{
+				float WaitTime4 = 1.0f;
+				bCheckPos = true;
+				GetWorld()->GetTimerManager().SetTimer(TimerHandle4, [this]()
+					{
+						bCheckPos = false;
+						bIsMoving = false;;
+						playerCharacter->ResetSpeed();
+					}, WaitTime4, false);
+			}
+				
+
 		}
 		else
 		{
+			
 			MeleeAttack();
+			bIsMoving = false;
+			bCheckPos = false;
 		}
 		
 	}
 	
+	// if the enemy AI's health is less than 20, regenerate health
+	if (thisCharacter->health < 20)
+		thisCharacter->Regenerate();
+	
+	// if doing ranged attack then call its function
+	if (bRangedAttack)
+	{
+		RangedAttack();
+	}
 }
 
 // Compares two location and returns if the within a certain range
@@ -99,16 +129,17 @@ void AEnemyAIController::RangedAttack()
 	// else if the attack is already on, them 
 	// decrease the health after every half second, also increase the magnitude of damage taken by the player
 	// if the player also managed to escape the range of ranged attack, reset the speed of character and reset magnitude of damage
-	if (!thisCharacter->RangedParticleSystemComponent->IsActive() && !playerCharacter->bIsDead)
+	if (!thisCharacter->GetbIsDoingRangedMove() && !playerCharacter->bIsDead)
 	{
 		thisCharacter->DoRangedMove();
 		playerCharacter->DecreaseSpeed();
+		bRangedAttack = true;
 	}
 	else
 	{
-		if (IsWithinRange(myLocation, playerLocation, 900.0f) && !playerCharacter->bIsDead)
+		if (IsWithinRange(myLocation, playerLocation, 800.0f) && !playerCharacter->bIsDead)
 		{
-			if (!bIsTimer3Started)
+			if (!bIsTimer3Started && thisCharacter->RangedParticleSystemComponent->IsActive())
 			{
 				float WaitTime3 = 0.5f;
 				bIsTimer3Started = true;
@@ -117,14 +148,17 @@ void AEnemyAIController::RangedAttack()
 						RangedDamage += 5;
 						playerCharacter->DecreaseHealth(RangedDamage);
 						bIsTimer3Started = false;
+						UE_LOG(LogTemp, Warning, TEXT("Decrease Health"));
 
 					}, WaitTime3, false);
 			}
+			bRangedAttack = true;
 		}
 		else
 		{
 			RangedDamage = 0;
 			playerCharacter->ResetSpeed();
+			bRangedAttack = false;
 		}
 	}
 }
