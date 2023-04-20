@@ -35,10 +35,14 @@ private:
 	FTimerHandle TimerHandle1;
 	FTimerHandle TimerHandle2;
 	FTimerHandle TimerHandle3;
+	FTimerHandle TimerHandle4;
 
 	bool bIsAwake = false;
 	bool bIsTimer3Started = false;
 	bool bHasWaited = true;
+	bool bIsMoving = false;
+	bool bCheckPos = false;
+	bool bRangedAttack = false;
 
 	int RangedDamage = 0;
 	float DotProduct;
