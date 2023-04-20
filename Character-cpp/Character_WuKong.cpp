@@ -89,7 +89,8 @@ void ACharacter_WuKong::Tick(float DeltaTime)
 	//Reset function of double jump
 	if (!CharacterMovement->IsFalling())
 		bDoDouble = true;
-
+	
+	// Character is doin the ranged attack when its doing its animation or its FX is active.
 	bIsDoingRangedMove = RangedParticleSystemComponent->IsActive() || AnimInstance->Montage_IsPlaying(RangedMoveMontage);
 }
 
@@ -297,7 +298,8 @@ void ACharacter_WuKong::IncreaseMana(int value)
 // FUnction for moving a ranged attack
 void ACharacter_WuKong::DoRangedMove()
 {
-	// Play animation of the move and FX
+	// Play animation of the move and FX after certain seconds,
+	// Making sure the animation is already is playing
 	if (!bTimeractivated)
 	{
 		CharacterMovement->StopActiveMovement();
@@ -353,6 +355,7 @@ void ACharacter_WuKong::CollisionFunction(UPrimitiveComponent* HitComp, AActor* 
 	}
 }
 
+// Function return if the character is doing the rangedMove or not
 bool ACharacter_WuKong::GetbIsDoingRangedMove()
 {
 	return bIsDoingRangedMove;
