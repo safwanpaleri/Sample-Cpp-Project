@@ -73,6 +73,9 @@ void ACharacter_WuKong::BeginPlay()
 	HealthBar = Cast<UProgressBar>(widgetComponent->GetUserWidgetObject()->WidgetTree->FindWidget(TEXT("HealthBar")));
 	ManaBar = Cast<UProgressBar>(widgetComponent->GetUserWidgetObject()->WidgetTree->FindWidget(TEXT("ManaBar")));
 	
+	// if this character is controlled by player controller then activate the character,
+	if(IsPlayerControlled())
+		bHasActivated = true;		
 }
 
 // Called every frame
@@ -86,6 +89,8 @@ void ACharacter_WuKong::Tick(float DeltaTime)
 	//Reset function of double jump
 	if (!CharacterMovement->IsFalling())
 		bDoDouble = true;
+
+	bIsDoingRangedMove = RangedParticleSystemComponent->IsActive() || AnimInstance->Montage_IsPlaying(RangedMoveMontage);
 }
 
 // Called to bind functionality to input
@@ -147,7 +152,7 @@ void ACharacter_WuKong::Jump()
 	if (CharacterMovement->IsFalling() && bDoDouble)
 	{
 		bDoDouble = false;
-		FVector JumpImpulse = GetActorUpVector() * DodgeImpulse;
+		FVector JumpImpulse = GetActorUpVector() * (DodgeImpulse / 2);
 		CharacterMovement->AddImpulse(JumpImpulse, true);
 		ParticleSystemComponent->SetTemplate(DoubleJumpFX);
 		PlayAnimMontage(JumpStartMontage);
@@ -159,8 +164,11 @@ void ACharacter_WuKong::Jump()
 void ACharacter_WuKong::Attack()
 {
 	// If character is not already attacking and not taking hits from enemies then do attack animation
-	if(!AnimInstance->Montage_IsPlaying(MeleeMontage) && !AnimInstance->Montage_IsPlaying(DamageMontage))
+	if (!AnimInstance->Montage_IsPlaying(MeleeMontage) && !AnimInstance->Montage_IsPlaying(DamageMontage) &&
+		!AnimInstance->Montage_IsPlaying(RangedMoveMontage) && !RangedParticleSystemComponent->IsActive())
+	{
 		PlayAnimMontage(MeleeMontage);
+	}
 }
 
 // Function for regenerating health of character
@@ -194,7 +202,7 @@ void ACharacter_WuKong::Dodge()
 {
 	// Play Dodge animation and do a backward impulse
 	PlayAnimMontage(DodgeMontage);
-	FVector ImpulseVector = ( - GetActorForwardVector() * DodgeImpulse) + (GetActorUpVector() * DodgeImpulse);
+	FVector ImpulseVector = ( - GetActorForwardVector() * DodgeImpulse) + (GetActorUpVector() * (DodgeImpulse / 2));
 	CharacterMovement->AddImpulse(ImpulseVector, true);
 }
 
@@ -290,9 +298,20 @@ void ACharacter_WuKong::IncreaseMana(int value)
 void ACharacter_WuKong::DoRangedMove()
 {
 	// Play animation of the move and FX
-	PlayAnimMontage(RangedMoveMontage);
-	RangedParticleSystemComponent->SetTemplate(RangeMoveFX);
-	RangedParticleSystemComponent->Activate();
+	if (!bTimeractivated)
+	{
+		CharacterMovement->StopActiveMovement();
+		PlayAnimMontage(RangedMoveMontage);
+		bTimeractivated = true;
+		float WaitTime8 = 4.0f;
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle8, [this]()
+			{
+				RangedParticleSystemComponent->SetTemplate(RangeMoveFX);
+				RangedParticleSystemComponent->Activate();
+				bTimeractivated = false;
+			}, WaitTime8, false);
+	}
+	
 }
 
 // Function to decrease the speed of this character
@@ -334,4 +353,7 @@ void ACharacter_WuKong::CollisionFunction(UPrimitiveComponent* HitComp, AActor* 
 	}
 }
 
-
+bool ACharacter_WuKong::GetbIsDoingRangedMove()
+{
+	return bIsDoingRangedMove;
+}
