@@ -17,6 +17,7 @@
 #include "Blueprint/WidgetTree.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "EnemyAIController.h"
 #include "Character_WuKong.generated.h"
 
 UCLASS()
@@ -88,11 +89,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Script_bool")
 	bool bIsAttacking;
 
+	UPROPERTY(VisibleAnywhere)
+	bool bIsDoingRangedMove;
 
 	bool bIsCooling;
 	bool bIsHitted;
 	bool bDoDouble = true;
 	bool bHasActivated = false;
+	bool bTimeractivated = false;
 
 	FTimerHandle TimerHandle;
 	FTimerHandle TimerHandle2;
@@ -101,6 +105,7 @@ public:
 	FTimerHandle TimerHandle5;
 	FTimerHandle TimerHandle6;
 	FTimerHandle TimerHandle7;
+	FTimerHandle TimerHandle8;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DodgeImpulse")
 	float DodgeImpulse = 1000.0f;
@@ -161,5 +166,8 @@ public:
 
 	UFUNCTION()
 	void ResetSpeed();
+
+	UFUNCTION()
+	bool GetbIsDoingRangedMove();
 
 };
